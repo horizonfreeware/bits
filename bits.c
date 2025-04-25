@@ -5,22 +5,34 @@
 #include <wchar.h>
 
 void print_help() {
-printf(
-" ____  _ _        \n"
-"| __ )(_) |_ ___  \n"
-"|  _ \\| | __/ __| \n"
-"| |_) | | |_\\__ \\ \n"
-"|____/|_|\\__|___/ \n"
-);
+  printf(
+  // logo, but it looks weird because of the escape chars
+  " ____  _ _        \n"
+  "| __ )(_) |_ ___  \n"
+  "|  _ \\| | __/ __| \n"
+  "| |_) | | |_\\__ \\ \n"
+  "|____/|_|\\__|___/ \n"
+  );
   printf("\n");
   printf("Usage: bits [-r,-v,-h] FILEPATH\n");
   printf("\n");
   printf("Options:\n");
-  printf("\t-r: [r]aw binary\n");
-  printf("\t-v: [v]erbose\n");
-  printf("\t-h: [h]elp\n");
+  printf("\t-p FILEPATH: [p]retty\n");
+  printf("\t-r FILEPATH: [r]aw binary\n");
+  printf("\t-v FILEPATH: [v]erbose\n");
+  printf("\t-h FILEPATH: [h]elp\n");
 }
 
+// Func - handle errors
+int handle_error(char* message) {
+  printf("Error: ");
+  printf(message);
+  printf("\n");
+  print_help();
+  exit(1);
+}
+
+// Func - print binary output
 void print_raw(FILE *file_pointer) {
   char *bitString;
   unsigned char byte;
@@ -34,8 +46,9 @@ void print_raw(FILE *file_pointer) {
   fclose(file_pointer);
 }
 
+// Func - print detailed output
 void print_verbose(FILE *file_pointer) {
-  int byteCount = 0;
+  int byteCount = 1;
   unsigned char byte;
   setlocale(LC_CTYPE, "");
   while (fread(&byte, sizeof(byte), 1, file_pointer) == 1) {
@@ -66,26 +79,70 @@ void print_verbose(FILE *file_pointer) {
   fclose(file_pointer);
 }
 
+void print_pretty(FILE *file_pointer) {
+  int lineCount = 1;
+  int charCount = 1;
+  unsigned char byte;
+  setlocale(LC_CTYPE, "");
+  while (fread(&byte, sizeof(byte), 1, file_pointer) == 1) {
+    printf("%d:%-10d ", lineCount, charCount); // Index of Byte
+
+    printf("0x%02x ", byte); // Print Hex
+
+    for (int i = 7; i >= 0; i--) {
+      printf("%d", (byte >> i) & 1); // Print bit
+    }
+
+    if (byte == '\n') {
+      printf(" \\n      ");
+      printf("\n");
+      charCount = 1;
+      lineCount += 1;
+    }
+    else if (byte == '\t') {
+      printf(" \\t       ");
+    }
+    else if (byte == '\r') {
+      printf(" \\r       ");
+    }
+    else if (byte == ' ') {
+      printf(" [space] ");
+      charCount += 1;
+    }
+    else {
+      wchar_t unicode_char = byte;
+      printf(" %lc       ", unicode_char); // Print Unicode Value
+      charCount += 1;
+    }
+    printf("\n");
+
+  }
+  fclose(file_pointer);
+}
+
 int main(int argc, char *argv[]) {
   FILE *fptr;
 
-  if (argc == 1) {
-    print_help();
-    return -1;
-  }
+  // HandleErr user only inputs one argument
+  if (argc <= 2) handle_error("Only one argument provided");
 
+  // open file path input
   fptr = fopen(argv[argc - 1], "rb");
 
-  if (argc < 3) {
-    print_verbose(fptr);
-  } else if (strcmp(argv[1], "-h") == 0) {
+  // HandleErr file path invalid
+  if(fptr == 0) handle_error("Path invalid");
+
+  // argument parsing
+  if (strcmp(argv[1], "-h") == 0)
     print_help();
-  } else if (strcmp(argv[1], "-r") == 0) {
+  else if (strcmp(argv[1], "-r") == 0)
     print_raw(fptr);
-  } else if (strcmp(argv[1], "-v") == 0) {
+  else if (strcmp(argv[1], "-v") == 0)
     print_verbose(fptr);
-  } else {
-    printf("flag not recognized: %s\n", argv[2]);
+  else if (strcmp(argv[1], "-p") == 0)
+    print_pretty(fptr);
+  else {
+    handle_error("Flag not recongized");
   }
 
   return 0;
