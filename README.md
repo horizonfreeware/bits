@@ -13,4 +13,4 @@ Options:<br>
 
 
 Output:<br>
-<LINE>:<CHAR>   <HEX> <BINARY> <UNICODE>
+LINE:CHAR&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;HEX BINARY UNICODE
